@@ -418,7 +418,7 @@
                 return;
             }
 
-            submitBtn.innerText = "Saving to Database...";
+            submitBtn.innerText = "Processing Order...";
             submitBtn.disabled = true;
 
             let allProductNames = window.shoppingCart.map(item => item.name).join(", ");
@@ -426,6 +426,7 @@
             let totalQty = window.shoppingCart.reduce((sum, item) => sum + item.quantity, 0);
 
             try {
+                // --- ENGINE 1: SAVE TO FIREBASE DATABASE ---
                 await addDoc(collection(db, "orders"), {
                     userId: currentUser.uid,
                     userEmail: currentUser.email,
@@ -437,6 +438,29 @@
                     orderDate: new Date().toISOString()
                 });
 
+                // --- ENGINE 2: SEND EMAIL VIA FORMSPREE ---
+                // 1. Package the data nicely for the email
+                const formData = new FormData();
+                formData.append("Customer Name", document.getElementById('name').value);
+                formData.append("Customer Email", currentUser.email);
+                formData.append("Shipping Message", document.getElementById('message').value);
+                
+                let textForEmail = "ORDER SUMMARY:\n\n";
+                window.shoppingCart.forEach(item => {
+                    textForEmail += `- ${item.quantity}x ${item.name} ($${(item.price * item.quantity).toFixed(2)})\n`;
+                });
+                textForEmail += `\nGRAND TOTAL: $${grandTotal.toFixed(2)}`;
+                formData.append("Order Details", textForEmail);
+
+                // 2. Send it silently in the background
+                await fetch("https://formspree.io/f/xgoqqwkg", {
+                    method: "POST",
+                    body: formData,
+                    headers: { 'Accept': 'application/json' }
+                });
+
+
+                // --- SUCCESS! RESET EVERYTHING ---
                 const successMsg = document.getElementById('success-message');
                 successMsg.style.display = 'block';
                 form.reset();
@@ -449,18 +473,18 @@
                 
                 window.shoppingCart = [];
                 updateCartDisplay();
-                fetchOrderHistory();
+                fetchOrderHistory(); // Update the history UI instantly
 
                 setTimeout(() => { successMsg.style.display = 'none'; }, 5000);
 
             } catch(error) {
-                console.error("Error adding document: ", error);
-                alert("Database Error: Make sure your Firestore rules allow writing!");
+                console.error("Error processing order: ", error);
+                alert("There was an error processing your order. Please try again.");
             } finally {
                 submitBtn.innerText = "Place Order";
                 submitBtn.disabled = false;
             }
         });
-    </script>
+        </script>
 </body>
 </html>
