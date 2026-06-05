@@ -200,6 +200,13 @@
                     <p class="price">$250</p>
                     <button id="btn-squishy" onclick="addToCart('Pokemon squishy', 250, 'btn-squishy')">Add to Cart</button>
                 </div>
+                <div class="product-card">
+                    <img src="YOUR_IMAGE_LINK_HERE.jpg" alt="Eraser of Mount.Fuji">
+                    <h3>Eraser of Mount.Fuji</h3>
+                    <p>Erase it until your eraser become a Mount.Fuji :)</p>
+                    <p class="price">$40</p>
+                    <button id="btn-eraser" onclick="addToCart('eraser', 40, 'btn-eraser', true)">Add to Cart</button>
+                </div>
 
             </div>
 
@@ -273,13 +280,27 @@
             document.getElementById('signup-error').style.display = 'none';
         };
 
-        window.addToCart = function(itemName, itemPrice, buttonId) {
+        window.addToCart = function(itemName, itemPrice, buttonId, canBuyMultiple = false) {
             let existingItem = window.shoppingCart.find(item => item.name === itemName);
-            if (!existingItem) {
+            
+            // If the item is already in the cart
+            if (existingItem) {
+                // If the secret switch is ON, just add 1 to the quantity
+                if (canBuyMultiple === true) {
+                    existingItem.quantity += 1; 
+                    updateCartDisplay();
+                }
+            } else {
+                // If it is NOT in the cart yet, add it for the first time
                 window.shoppingCart.push({ name: itemName, price: itemPrice, quantity: 1, btnId: buttonId }); 
-                let btn = document.getElementById(buttonId);
-                btn.innerText = "Sold Out";
-                btn.disabled = true;
+                
+                // If the secret switch is OFF, lock the button
+                if (canBuyMultiple === false) {
+                    let btn = document.getElementById(buttonId);
+                    btn.innerText = "Sold Out";
+                    btn.disabled = true;
+                }
+                
                 updateCartDisplay();
             }
         };
